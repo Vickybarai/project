@@ -1,4 +1,4 @@
-# Docker 3-Tier Architecture Project (Without RDS)
+Tier Architecture Project (Without RDS)
 
 **Frontend → Backend (Tomcat) → Database (MySQL)**
 Artifacts are stored in **AWS S3** (WAR + MySQL Connector JAR).
