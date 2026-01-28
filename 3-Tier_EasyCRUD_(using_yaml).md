@@ -34,6 +34,7 @@ docker-compose --version
 ```bash
 git clone https://github.com/shubhamkalsait/EasyCRUD.git
 cd EasyCRUD
+git checkout cdec-b48
 ```
 
 ---
