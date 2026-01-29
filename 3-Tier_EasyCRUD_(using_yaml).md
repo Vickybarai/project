@@ -474,8 +474,8 @@ mariadb-container   Up (healthy)
 Or:
 ```bash
 docker inspect mariadb-container | grep Health
-'''
 
+```
 ---
 
 🏆 Result
