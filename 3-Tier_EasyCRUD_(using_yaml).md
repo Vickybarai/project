@@ -327,8 +327,8 @@ Application Accessible via Browser
 
 
 
-
-🚨 Common Error: Backend Fails to Connect to Database
+___
+🚨## Common Error: Backend Fails to Connect to Database
 
 🔴 Error Message Seen in Logs
 
@@ -377,6 +377,7 @@ We will make Docker wait until MariaDB is actually ready, not just started.
 🛠 Step 1 — Add Healthcheck to Database Service
 
 Update docker-compose.yml:
+'''bash
 
 database:
   image: mariadb:latest
@@ -396,13 +397,14 @@ database:
     interval: 5s
     timeout: 5s
     retries: 10
+'''
 
 🔍 What this does
 
 Docker will run:
-
+'''bash
 mysqladmin ping -h localhost
-
+'''
 inside the DB container every 5 seconds.
 
 Only when it returns:
@@ -417,7 +419,7 @@ Docker marks the DB as healthy.
 🛠 Step 2 — Make Backend Wait for Healthy DB
 
 Modify backend service:
-
+'''bash
 backend:
   build: ./backend
   container_name: backend-container
@@ -433,14 +435,14 @@ backend:
   networks:
     - school-net
 
-
+'''
 ---
 
 🔄 Step 3 — Rebuild Services
-
+'''bash
 docker-compose down
 docker-compose up -d --build
-
+'''
 
 ---
 
@@ -462,17 +464,17 @@ Backend connects successfully
 ---
 
 🟢 How to Verify Health Status
-
+'''bash
 docker ps
-
+'''
 You will see:
-
+'''bash
 mariadb-container   Up (healthy)
-
+'''
 Or:
-
+'''bash
 docker inspect mariadb-container | grep Health
-
+'''
 
 ---
 
