@@ -478,13 +478,185 @@ docker inspect mariadb-container | grep Health
 ```
 ---
 
+
+
+## 👉 Error Update: Backend Fails to Connect to Database
+
+### 🔴 Error Message Seen in Logs
+
+```bash
+Connection refused host=database port=3306
+Unable to determine Dialect without JDBC metadata
+HikariPool - Exception during pool initialization
+```
+
+---
+
+🎯 Why This Error Happens
+
+Even though Docker Compose starts services in order:
+
+```yaml
+depends_on:
+  - database
+```
+
+This does NOT mean the database is ready.
+
+It only means:
+
+Status	Meaning	
+✅ Container started	Docker container is running	
+❌ Database service inside container may still be initializing	MariaDB is not accepting connections yet	
+
+MariaDB needs a few seconds to:
+- Create system tables
+- Apply configurations
+- Start accepting connections
+
+During this time, backend tries to connect → connection refused → application crashes.
+
+---
+
+✅ Solution: Add Health Check
+
+We will make Docker wait until MariaDB is actually ready, not just started.
+
+---
+
+🛠 Step 1 — Add Healthcheck to Database Service
+
+Update `docker-compose.yml`:
+
+```yaml
+database:
+  image: mariadb:latest
+  container_name: mariadb-container
+  environment:
+    MARIADB_ROOT_PASSWORD: "redhat"
+    MARIADB_DATABASE: "studentapp"
+  volumes:
+    - my-vol123:/var/lib/mysql
+  ports:
+    - "3306:3306"
+  networks:
+    - school-net
+
+  healthcheck:
+    test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+    interval: 5s
+    timeout: 5s
+    retries: 10
+```
+
+🔍 What this does
+
+Docker will run:
+
+```bash
+mysqladmin ping -h localhost
+```
+
+inside the DB container every 5 seconds.
+
+Only when it returns:
+
+```bash
+mysqld is alive
+```
+
+Docker marks the DB as healthy.
+
+---
+
+🛠 Step 2 — Make Backend Wait for Healthy DB
+
+Modify backend service:
+
+```yaml
+backend:
+  build: ./backend
+  container_name: backend-container
+  ports:
+    - "8080:8080"
+  environment:
+    SPRING_DATASOURCE_URL: "jdbc:mariadb://database:3306/studentapp"
+    SPRING_DATASOURCE_USERNAME: "root"
+    SPRING_DATASOURCE_PASSWORD: "redhat"
+  depends_on:
+    database:
+      condition: service_healthy
+  networks:
+    - school-net
+```
+
+---
+
+🔄 Step 3 — Rebuild Services
+
+```bash
+docker-compose down
+docker-compose up -d --build
+```
+
+---
+
+🧠 What Happens Now (Flow)
+
+```
+Docker starts MariaDB container
+        ↓
+Runs healthcheck command
+        ↓
+Waits until DB responds
+        ↓
+Marks DB as HEALTHY
+        ↓
+Backend container starts
+        ↓
+Backend connects successfully
+```
+
+---
+
+🟢 How to Verify Health Status
+
+```bash
+docker ps
+```
+
+You will see:
+
+```bash
+mariadb-container   Up (healthy)
+```
+
+Or:
+
+```bash
+docker inspect mariadb-container | grep Health
+```
+
+---
+
 🏆 Result
 
-Before	After
+Before	After	
+Backend crashes on first run	Backend always starts correctly	
+Manual restart needed	Fully automated	
+Unstable startup	Production-style reliability	
 
-Backend crashes on first run	Backend always starts correctly
-Manual restart needed	Fully automated
-Unstable startup	Production-style reliability
+---
 
+📌 This Technique Is Used In
 
+- ✅ Microservices
+- ✅ Kubernetes readiness probes
+- ✅ Production CI/CD pipelines
+- ✅ Cloud deployments
 
+---
+
+> This is considered an advanced Docker Compose practice and makes your project industry-ready.
+
+```
